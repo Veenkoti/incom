@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import './App.css'; // <--- IMPORTANT: Import the new CSS file here!
 
 const promptCategories = {
   emotional: [
@@ -75,80 +76,20 @@ const promptCategories = {
 
 // Dynamic background system based on mood/tone (using Unsplash for reliability)
 const backgroundScenes = {
-  // Nordic/Scandinavia scenes
-  peaceful: [
-    "https://source.unsplash.com/1920x1080/?norwegian,fjord,calm",
-    "https://source.unsplash.com/1920x1080/?scandinavian,lake,mirror",
-    "https://source.unsplash.com/1920x1080/?finland,forest,misty"
-  ],
-  contemplative: [
-    "https://source.unsplash.com/1920x1080/?nordic,mountains,fog",
-    "https://source.unsplash.com/1920x1080/?iceland,landscape,moody",
-    "https://source.unsplash.com/1920x1080/?norway,clouds,dramatic"
-  ],
-  hopeful: [
-    "https://source.unsplash.com/1920x1080/?aurora,northern,lights",
-    "https://source.unsplash.com/1920x1080/?nordic,sunrise,golden",
-    "https://source.unsplash.com/1920x1080/?scandinavia,spring,bright"
-  ],
-  calm: [
-    "https://source.unsplash.com/1920x1080/?scandinavian,beach,serene",
-    "https://source.unsplash.com/1920x1080/?nordic,water,still",
-    "https://source.unsplash.com/1920x1080/?finland,winter,quiet"
-  ],
-  empowering: [
-    "https://source.unsplash.com/1920x1080/?mountain,peak,triumph",
-    "https://source.unsplash.com/1920x1080/?nordic,cliff,strong",
-    "https://source.unsplash.com/1920x1080/?scandinavian,glacier,powerful"
-  ],
-  // Ocean scenes
-  flowing: [
-    "https://source.unsplash.com/1920x1080/?ocean,waves,gentle",
-    "https://source.unsplash.com/1920x1080/?sea,rhythm,peaceful",
-    "https://source.unsplash.com/1920x1080/?water,movement,calm"
-  ],
-  deep: [
-    "https://source.unsplash.com/1920x1080/?ocean,deep,blue",
-    "https://source.unsplash.com/1920x1080/?sea,mysterious,vast",
-    "https://source.unsplash.com/1920x1080/?underwater,serene,blue"
-  ],
-  // Forest scenes
-  nurturing: [
-    "https://source.unsplash.com/1920x1080/?forest,green,nurturing",
-    "https://source.unsplash.com/1920x1080/?woodland,gentle,light",
-    "https://source.unsplash.com/1920x1080/?trees,protective,warm"
-  ],
-  grounded: [
-    "https://source.unsplash.com/1920x1080/?forest,earth,roots",
-    "https://source.unsplash.com/1920x1080/?woodland,stable,strong",
-    "https://source.unsplash.com/1920x1080/?nature,foundation,solid"
-  ],
-  // Default and special moods
-  default: [
-    "https://source.unsplash.com/1920x1080/?nordic,nature,beautiful",
-    "https://source.unsplash.com/1920x1080/?scandinavian,landscape,serene",
-    "https://source.unsplash.com/1920x1080/?nature,peaceful,healing"
-  ],
-  triumphant: [
-    "https://source.unsplash.com/1920x1080/?summit,victory,achievement",
-    "https://source.unsplash.com/1920x1080/?mountain,top,success",
-    "https://source.unsplash.com/1920x1080/?peak,triumph,golden"
-  ],
-  grateful: [
-    "https://source.unsplash.com/1920x1080/?sunset,golden,light,warm",
-    "https://source.unsplash.com/1920x1080/?harvest,abundance,nature",
-    "https://source.unsplash.com/1920x1080/?cozy,home,comfort"
-  ],
-  reflective: [
-    "https://source.unsplash.com/1920x1080/?library,books,study,quiet",
-    "https://source.unsplash.com/1920x1080/?rain,window,contemplation",
-    "https://source.unsplash.com/1920x1080/?foggy,morning,solitude"
-  ],
-  creative: [
-    "https://source.unsplash.com/1920x1080/?art,studio,inspiration",
-    "https://source.unsplash.com/1920x1080/?colorful,abstract,paint",
-    "https://source.unsplash.com/1920x1080/?dreamy,surreal,imagination"
-  ]
+  peaceful: ["https://source.unsplash.com/1920x1080/?norwegian,fjord,calm", "https://source.unsplash.com/1920x1080/?scandinavian,lake,mirror", "https://source.unsplash.com/1920x1080/?finland,forest,misty"],
+  contemplative: ["https://source.unsplash.com/1920x1080/?nordic,mountains,fog", "https://source.unsplash.com/1920x1080/?iceland,landscape,moody", "https://source.unsplash.com/1920x1080/?norway,clouds,dramatic"],
+  hopeful: ["https://source.unsplash.com/1920x1080/?aurora,northern,lights", "https://source.unsplash.com/1920x1080/?nordic,sunrise,golden", "https://source.unsplash.com/1920x1080/?scandinavia,spring,bright"],
+  calm: ["https://source.unsplash.com/1920x1080/?scandinavian,beach,serene", "https://source.unsplash.com/1920x1080/?nordic,water,still", "https://source.unsplash.com/1920x1080/?finland,winter,quiet"],
+  empowering: ["https://source.unsplash.com/1920x1080/?mountain,peak,triumph", "https://source.unsplash.com/1920x1080/?nordic,cliff,strong", "https://source.unsplash.com/1920x1080/?scandinavian,glacier,powerful"],
+  flowing: ["https://source.unsplash.com/1920x1080/?ocean,waves,gentle", "https://source.unsplash.com/1920x1080/?sea,rhythm,peaceful", "https://source.unsplash.com/1920x1080/?water,movement,calm"],
+  deep: ["https://source.unsplash.com/1920x1080/?ocean,deep,blue", "https://source.unsplash.com/1920x1080/?sea,mysterious,vast", "https://source.unsplash.com/1920x1080/?underwater,serene,blue"],
+  nurturing: ["https://source.unsplash.com/1920x1080/?forest,green,nurturing", "https://source.unsplash.com/1920x1080/?woodland,gentle,light", "https://source.unsplash.com/1920x1080/?trees,protective,warm"],
+  grounded: ["https://source.unsplash.com/1920x1080/?forest,earth,roots", "https://source.unsplash.com/1920x1080/?woodland,stable,strong", "https://source.unsplash.com/1920x1080/?nature,foundation,solid"],
+  default: ["https://source.unsplash.com/1920x1080/?nordic,nature,beautiful", "https://source.unsplash.com/1920x1080/?scandinavian,landscape,serene", "https://source.unsplash.com/1920x1080/?nature,peaceful,healing"],
+  triumphant: ["https://source.unsplash.com/1920x1080/?summit,victory,achievement", "https://source.unsplash.com/1920x1080/?mountain,top,success", "https://source.unsplash.com/1920x1080/?peak,triumph,golden"],
+  grateful: ["https://source.unsplash.com/1920x1080/?sunset,golden,light,warm", "https://source.unsplash.com/1920x1080/?harvest,abundance,nature", "https://source.unsplash.com/1920x1080/?cozy,home,comfort"],
+  reflective: ["https://source.unsplash.com/1920x1080/?library,books,study,quiet", "https://source.unsplash.com/1920x1080/?rain,window,contemplation", "https://source.unsplash.com/1920x1080/?foggy,morning,solitude"],
+  creative: ["https://source.unsplash.com/1920x1080/?art,studio,inspiration", "https://source.unsplash.com/1920x1080/?colorful,abstract,paint", "https://source.unsplash.com/1920x1080/?dreamy,surreal,imagination"]
 };
 
 // Flatten all prompts into a single array for random selection
@@ -162,7 +103,7 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [clock, setClock] = useState(new Date());
-  const [lanternMode, setLanternMode] = useState(false); // Controls if video is active
+  const [lanternMode, setLanternMode] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [notification, setNotification] = useState('');
@@ -172,15 +113,17 @@ function App() {
   const [promptCount, setPromptCount] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const [lastActivity, setLastActivity] = useState(Date.now());
-  const [currentMood, setCurrentMood] = useState('default'); // Default mood for dynamic backgrounds
-  const [backgroundImage, setBackgroundImage] = useState(''); // Stores the URL for image backgrounds
+  const [currentMood, setCurrentMood] = useState('default');
+  const [backgroundImage, setBackgroundImage] = useState('');
   const [showPorsche, setShowPorsche] = useState(false);
+  const [currentWhisperNudge, setCurrentWhisperNudge] = useState(''); // New state for whisper nudge
   
   const videoRef = useRef(null);
   const textareaRef = useRef(null);
-  const notificationTimeoutRef = useRef(null); // Ref to store notification timeout ID
+  const notificationTimeoutRef = useRef(null);
+  const whisperNudgeIntervalRef = useRef(null); // Ref for whisper nudge interval
 
-  // Cloudinary URLs (publicly accessible)
+  // Cloudinary URLs
   const lanternVideoUrl = "https://res.cloudinary.com/dausootjh/video/upload/v1747906119/vhfgxrpxygwaqnpsmca4.mp4";
   const pineIconUrl = "https://res.cloudinary.com/dausootjh/image/upload/v1747906043/Northern_Journal_Icon_Design_g9vm1l.png";
   const porscheImageUrl = "https://res.cloudinary.com/dausootjh/image/upload/v1747906043/Twilight_Porsche_in_Snowy_Landscape_xwlrkj.png";
@@ -207,20 +150,33 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Initialize background on mount (dynamic images by default)
+  // Function to update background based on mood (if not in lantern mode)
+  const updateBackgroundForMood = useCallback((mood) => {
+    if (!lanternMode) {
+      const scenes = backgroundScenes[mood] || backgroundScenes.default;
+      const randomScene = scenes[Math.floor(Math.random() * scenes.length)];
+      setBackgroundImage(randomScene);
+    }
+    setCurrentMood(mood);
+  }, [lanternMode]); // Dependency on lanternMode
+
+  // Initialize background and whisper nudge on mount
   useEffect(() => {
     updateBackgroundForMood('default');
-  }, []);
+    // Start whisper nudge interval
+    updateWhisperNudge(); // Initial nudge
+    whisperNudgeIntervalRef.current = setInterval(updateWhisperNudge, 60000); // Update every 60 seconds
+
+    return () => clearInterval(whisperNudgeIntervalRef.current); // Cleanup
+  }, [updateBackgroundForMood]);
 
   // Activity tracking for auto-save
   useEffect(() => {
     const interval = setInterval(() => {
-      // Auto-save only if currentEntry has content and user is inactive for 30 seconds
       if (currentEntry.trim() && Date.now() - lastActivity > 30000) {
         autoSave();
       }
-    }, 10000); // Check every 10 seconds
-
+    }, 10000);
     return () => clearInterval(interval);
   }, [currentEntry, lastActivity]);
 
@@ -231,7 +187,7 @@ function App() {
         videoRef.current.play().catch(error => console.warn("Video autoplay failed:", error));
       } else {
         videoRef.current.pause();
-        videoRef.current.currentTime = 0; // Reset video to start
+        videoRef.current.currentTime = 0;
       }
     }
   }, [lanternMode]);
@@ -255,25 +211,15 @@ function App() {
           }
         }
         if (draft.mood) {
-          setCurrentMood(draft.mood); // Will trigger background update if dynamic mode is active
+          setCurrentMood(draft.mood);
         }
-        showNotification('📝 Draft loaded from last session!');
+        showNotification('📝 Draft loaded from last session!', 3000);
       } catch (e) {
         console.error("Failed to parse journal draft from localStorage:", e);
-        localStorage.removeItem('journal_draft'); // Clear corrupted draft
+        localStorage.removeItem('journal_draft');
       }
     }
   }, []);
-
-  // Update background based on mood (only applies if not in lantern mode)
-  const updateBackgroundForMood = (mood) => {
-    if (!lanternMode) { // Only update image background if lantern mode is off
-      const scenes = backgroundScenes[mood] || backgroundScenes.default;
-      const randomScene = scenes[Math.floor(Math.random() * scenes.length)];
-      setBackgroundImage(randomScene);
-    }
-    setCurrentMood(mood);
-  };
 
   // Notification handler
   const showNotification = (message, duration = 3000) => {
@@ -295,7 +241,7 @@ function App() {
     setLastActivity(Date.now());
     
     // Debounce the typing indicator reset
-    if (notificationTimeoutRef.current) { // Reusing notificationTimeoutRef, could use a separate one
+    if (notificationTimeoutRef.current) {
         clearTimeout(notificationTimeoutRef.current);
     }
     notificationTimeoutRef.current = setTimeout(() => setIsTyping(false), 1000);
@@ -326,7 +272,6 @@ function App() {
         detectedMood = 'creative';
     }
     
-    // Only update mood and background if there's a significant change in text and detected mood differs
     if (text.length > 50 && detectedMood !== currentMood) {
       updateBackgroundForMood(detectedMood);
     }
@@ -340,12 +285,10 @@ function App() {
   };
 
   // Enhanced prompt generation with mood-based backgrounds
-  const showPrompt = (category = null, isWhisper = false) => {
+  const showPrompt = (category = null) => { // Removed isWhisper parameter
     let promptsToUse;
     
-    if (isWhisper) {
-      promptsToUse = promptCategories.whisper;
-    } else if (category && category !== 'all') {
+    if (category && category !== 'all') {
       promptsToUse = promptCategories[category];
     } else {
       promptsToUse = allPrompts;
@@ -371,10 +314,7 @@ function App() {
     setPromptIndex(promptInAllPrompts);
     setPromptCount(prev => prev + 1);
     
-    // Update background based on prompt mood (if not in lantern mode)
-    if (selectedPrompt.mood) {
-      updateBackgroundForMood(selectedPrompt.mood);
-    }
+    updateBackgroundForMood(selectedPrompt.mood); // Always update background based on prompt mood
     
     // Surprise trigger (every 10th prompt)
     if (promptCount > 0 && (promptCount + 1) % 10 === 0) { 
@@ -384,17 +324,22 @@ function App() {
     focusTextarea();
   };
 
+  // Update whisper nudge text
+  const updateWhisperNudge = () => {
+    const whispers = promptCategories.whisper;
+    const randomWhisper = whispers[Math.floor(Math.random() * whispers.length)];
+    setCurrentWhisperNudge(randomWhisper.text);
+  };
+
   // Surprise element trigger with Porsche
   const triggerSurprise = () => {
     setShowSurprise(true);
     setShowPorsche(true);
     showNotification("🎉 Surprise! You've been consistent with your journaling - like the precision of a Porsche 911!", 6000);
-    // Temporarily set background to Porsche image if not in lantern mode
     if (!lanternMode) setBackgroundImage(porscheImageUrl);
     setTimeout(() => {
       setShowSurprise(false);
       setShowPorsche(false);
-      // Revert to current mood background after surprise if not in lantern mode
       if (!lanternMode) updateBackgroundForMood(currentMood); 
     }, 6000);
   };
@@ -413,7 +358,7 @@ function App() {
   // Enhanced save with metadata
   const saveEntry = () => {
     if (!currentEntry.trim()) {
-      showNotification('✍️ Please write something before saving!');
+      showNotification('✍️ Please write something before saving!', 3000);
       return;
     }
 
@@ -438,14 +383,15 @@ function App() {
     setCurrentEntry(''); 
     setPromptIndex(-1); 
     localStorage.removeItem('journal_draft'); 
-    showNotification('✅ Entry saved successfully!');
+    showNotification('✅ Entry saved successfully!', 3000);
+    updateWhisperNudge(); // Nudge on save
     
     // Achievement notifications
     const newTotalEntries = entries.length + 1;
     if (newTotalEntries === 5) {
-      setTimeout(() => showNotification('🌟 Achievement: 5 entries! You\'re building a beautiful practice.'), 1500);
+      setTimeout(() => showNotification('🌟 Achievement: 5 entries! You\'re building a beautiful practice.', 4000), 1500);
     } else if (newTotalEntries === 10) {
-      setTimeout(() => showNotification('🏆 Achievement: 10 entries! Your healing journey is taking shape.'), 1500);
+      setTimeout(() => showNotification('🏆 Achievement: 10 entries! Your healing journey is taking shape.', 4000), 1500);
     }
   };
 
@@ -476,7 +422,7 @@ function App() {
   // Enhanced download with better formatting
   const downloadEntry = () => {
     if (!currentEntry.trim()) {
-      showNotification('❌ No content to download!');
+      showNotification('❌ No content to download!', 3000);
       return;
     }
 
@@ -504,13 +450,13 @@ Tags: ${extractTags(currentEntry).join(', ') || 'None'}
     a.download = `northern-journal-${new Date().toISOString().split('T')[0]}-${Date.now()}.txt`;
     a.click();
     URL.revokeObjectURL(a.href); 
-    showNotification('📥 Entry downloaded successfully!');
+    showNotification('📥 Entry downloaded successfully!', 3000);
   };
 
   // Download all entries with enhanced formatting
   const downloadAllEntries = () => {
     if (entries.length === 0) {
-      showNotification('❌ No entries to download!');
+      showNotification('❌ No entries to download!', 3000);
       return;
     }
 
@@ -552,13 +498,13 @@ ${'='.repeat(50)}
     a.download = `northern-journal-complete-${new Date().toISOString().split('T')[0]}.txt`;
     a.click();
     URL.revokeObjectURL(a.href);
-    showNotification('📤 All entries downloaded!');
+    showNotification('📤 All entries downloaded!', 3000);
   };
 
   // Enhanced copy with formatting
   const copyEntry = () => {
     if (!currentEntry.trim()) {
-      showNotification('❌ No content to copy!');
+      showNotification('❌ No content to copy!', 3000);
       return;
     }
     
@@ -567,10 +513,10 @@ ${'='.repeat(50)}
     const fullContent = timestamp + prompt + currentEntry;
     
     navigator.clipboard.writeText(fullContent).then(() => {
-      showNotification('📋 Entry copied to clipboard!');
+      showNotification('📋 Entry copied to clipboard!', 3000);
     }).catch((err) => {
       console.error('Failed to copy: ', err);
-      showNotification('❌ Failed to copy to clipboard. Please try manually.');
+      showNotification('❌ Failed to copy to clipboard. Please try manually.', 3000);
     });
   };
 
@@ -578,7 +524,7 @@ ${'='.repeat(50)}
   const deleteEntry = (id) => {
     if (window.confirm('Are you sure you want to delete this entry? This action cannot be undone.')) {
       setEntries(prev => prev.filter(entry => entry.id !== id));
-      showNotification('🗑️ Entry deleted.');
+      showNotification('🗑️ Entry deleted.', 3000);
     }
   };
 
@@ -589,7 +535,7 @@ ${'='.repeat(50)}
         setEntries([]);
         localStorage.removeItem('journal_entries');
         localStorage.removeItem('journal_draft');
-        showNotification('🗑️ All journal entries have been cleared.');
+        showNotification('🗑️ All journal entries have been cleared.', 3000);
       }
     }
   };
@@ -604,18 +550,7 @@ ${'='.repeat(50)}
 
   return (
     <div className="App" style={{ 
-      // Conditional background based on lanternMode
       backgroundImage: lanternMode ? 'none' : `url(${backgroundImage})`, 
-      backgroundSize: 'cover', 
-      backgroundPosition: 'center', 
-      backgroundAttachment: 'fixed',
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      color: '#ECEFF1', // Light gray/blue from your original
-      textShadow: '1px 1px 3px rgba(0,0,0,0.7)', 
-      transition: 'background-image 2s ease-in-out',
-      position: 'relative', // Needed for video overlay
     }}>
       {/* Lantern Mode Video Background */}
       {lanternMode && (
@@ -623,55 +558,38 @@ ${'='.repeat(50)}
           ref={videoRef} 
           loop 
           muted 
-          playsInline // 'playsInline' is important for mobile autoplay
-          style={{
-            position: 'fixed',
-            top: 0, left: 0,
-            width: '100%', height: '100%',
-            objectFit: 'cover',
-            zIndex: -1, // Ensures video is behind content
-            opacity: 0.8, // Slightly fade the video
-            filter: 'brightness(0.7)' // Darken the video for readability
-          }}
+          playsInline
+          className="lantern-video-background"
         >
           <source src={lanternVideoUrl} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
       )}
 
-      {/* Porsche Surprise */}
+      {/* Porsche Surprise Overlay */}
       {showPorsche && (
-        <div className="porsche-surprise-overlay" style={{
-          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-          display: 'flex', justifyContent: 'center', alignItems: 'center',
-          backgroundColor: 'rgba(0, 0, 0, 0.7)', zIndex: 1000,
-          opacity: showSurprise ? 1 : 0, // Control opacity for fade effect
-          transition: 'opacity 0.5s ease-in-out',
-        }}>
-          <img src={porscheImageUrl} alt="Porsche 911" style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
-          <button onClick={() => setShowPorsche(false)} style={{
-            position: 'absolute', top: '20px', right: '20px', padding: '10px 15px',
-            background: 'rgba(255, 255, 255, 0.3)', color: 'white', border: 'none',
-            borderRadius: '5px', cursor: 'pointer', fontSize: '1em', zIndex: 1001
-          }}>Close</button>
+        <div className="porsche-surprise-overlay">
+          <img src={porscheImageUrl} alt="Porsche 911" />
+          <button onClick={() => setShowPorsche(false)} className="close-porsche-button">Close</button>
         </div>
       )}
 
-      <header style={headerStyle}>
-        <h1 style={titleStyle}>Northern Journal</h1>
-        <div style={dateTimeStyle}>
-          <span>{getFormattedDate()}</span>
-          <span>{getFormattedTime()}</span>
+      <header className="App-header">
+        <h1 className="App-title">Northern Journal</h1>
+        <p className="App-quote">"Healing begins in silence."</p>
+        <div className="datetime-container">
+          <span className="datetime-item">{getFormattedDate()}</span>
+          <span className="datetime-item">{getFormattedTime()}</span>
         </div>
       </header>
 
-      <main style={mainContentStyle}>
+      <main className="App-main-content">
         {!showHistory ? (
-          <div style={journalAreaStyle}>
+          <div className="journal-area">
             {promptIndex >= 0 && (
-              <div style={promptBoxStyle}>
-                <p style={{fontStyle: 'italic', marginBottom: '5px'}}>{allPrompts[promptIndex].text}</p>
-                <span style={{fontSize: '0.8em', opacity: 0.8}}>- {allPrompts[promptIndex].credit}</span>
+              <div className="prompt-box">
+                <p>{allPrompts[promptIndex].text}</p>
+                <span>- {allPrompts[promptIndex].credit}</span>
               </div>
             )}
             
@@ -680,25 +598,25 @@ ${'='.repeat(50)}
               value={currentEntry}
               onChange={handleTextChange}
               placeholder="What's on your mind today? Let the words flow..."
-              style={textareaStyle}
+              className="journal-textarea"
             />
 
-            {isTyping && <div style={typingIndicatorStyle}>Typing...</div>}
+            {isTyping && <div className="typing-indicator">Typing...</div>}
 
-            <div style={buttonContainerStyle}>
+            <div className="journal-buttons-container">
               {/* Category Dropdown */}
-              <div style={{position: 'relative'}}>
-                  <button onClick={() => setShowCategories(!showCategories)} style={buttonStyle}>
+              <div className="category-dropdown-wrapper">
+                  <button onClick={() => setShowCategories(!showCategories)} className="App-button category-button">
                       {selectedCategory === 'all' ? 'Categories ▼' : `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} ▼`}
                   </button>
                   {showCategories && (
-                      <div style={categoryDropdownStyle}>
-                          <button onClick={() => { setSelectedCategory('all'); showPrompt('all'); setShowCategories(false); }} style={dropdownItemStyle}>All Prompts</button>
-                          {Object.keys(promptCategories).filter(cat => cat !== 'whisper').map(category => ( // Filter out whisper from main list
+                      <div className="category-dropdown-content">
+                          <button onClick={() => { setSelectedCategory('all'); showPrompt('all'); setShowCategories(false); }} className="dropdown-item">All Prompts</button>
+                          {Object.keys(promptCategories).filter(cat => cat !== 'whisper').map(category => (
                               <button 
                                   key={category} 
                                   onClick={() => { setSelectedCategory(category); showPrompt(category); setShowCategories(false); }} 
-                                  style={dropdownItemStyle}
+                                  className="dropdown-item"
                               >
                                   {category.charAt(0).toUpperCase() + category.slice(1)}
                               </button>
@@ -706,353 +624,75 @@ ${'='.repeat(50)}
                       </div>
                   )}
               </div>
-              <button onClick={() => showPrompt()} style={buttonStyle}>New Prompt</button>
-              <button onClick={() => showPrompt(null, true)} style={buttonStyle}>Whisper Prompt</button> {/* Moved closer to textarea controls */}
-              <button onClick={saveEntry} style={buttonStyle}>Save Entry</button>
-              <button onClick={downloadEntry} style={buttonStyle}>Download Current</button>
-              <button onClick={copyEntry} style={buttonStyle}>Copy Current</button>
+              <button onClick={() => showPrompt()} className="App-button">New Prompt</button>
+              <button onClick={saveEntry} className="App-button">Save Entry</button>
+              <button onClick={downloadEntry} className="App-button">Download Current</button>
+              <button onClick={copyEntry} className="App-button">Copy Current</button>
             </div>
+            
+            {/* Whisper Nudge Box */}
+            {currentWhisperNudge && (
+                <div className="whisper-nudge-box">
+                    <p className="whisper-nudge-text">" {currentWhisperNudge} "</p>
+                </div>
+            )}
+
           </div>
         ) : (
-          <div style={historyAreaStyle}>
-            <h2 style={{textAlign: 'center', color: '#B3E5FC'}}>Journal History</h2>
+          <div className="history-area">
+            <h2 className="history-title">Journal History</h2>
             <input
               type="text"
               placeholder="Search entries..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={searchBarStyle}
+              className="search-bar"
             />
-            <div style={historyListStyle}>
+            <div className="history-list">
               {filteredEntries.length > 0 ? (
                 filteredEntries.map((entry) => (
-                  <div key={entry.id} style={entryCardStyle}>
-                    <h3 style={{margin: '0 0 5px 0', color: '#80DEEA'}}>
+                  <div key={entry.id} className="entry-card">
+                    <h3 className="entry-card-title">
                       {new Date(entry.date).toLocaleDateString()} - 
                       {entry.prompt ? ` Prompt: "${entry.prompt.text.substring(0, 50)}..."` : ' Untitled'}
                     </h3>
-                    <p style={{fontSize: '0.9em', opacity: 0.8, marginBottom: '10px'}}>
+                    <p className="entry-card-meta">
                       Mood: {entry.mood || 'N/A'} | Words: {entry.wordCount} | Read: {entry.estimatedReadTime} min
                       {entry.tags && entry.tags.length > 0 && ` | Tags: ${entry.tags.join(', ')}`}
                     </p>
-                    <p style={entryContentStyle}>{entry.content.substring(0, 300)}{entry.content.length > 300 ? '...' : ''}</p>
-                    <div style={entryActionsStyle}>
-                      <button onClick={() => alert(`Full Entry:\n\n${new Date(entry.date).toLocaleString()}\n${entry.prompt ? 'Prompt: ' + entry.prompt.text + '\n' : ''}\n${entry.content}\n\nWords: ${entry.wordCount}\nMood: ${entry.mood}`)} style={entryActionButton}>Read Full</button>
-                      <button onClick={() => deleteEntry(entry.id)} style={{ ...entryActionButton, backgroundColor: '#EF5350' }}>Delete</button> {/* Red color */}
+                    <p className="entry-card-content">{entry.content.substring(0, 300)}{entry.content.length > 300 ? '...' : ''}</p>
+                    <div className="entry-actions">
+                      <button onClick={() => alert(`Full Entry:\n\n${new Date(entry.date).toLocaleString()}\n${entry.prompt ? 'Prompt: ' + entry.prompt.text + '\n' : ''}\n${entry.content}\n\nWords: ${entry.wordCount}\nMood: ${entry.mood}`)} className="App-button entry-action-button">Read Full</button>
+                      <button onClick={() => deleteEntry(entry.id)} className="App-button entry-action-button delete-button">Delete</button>
                     </div>
                   </div>
                 ))
               ) : (
-                <p style={{textAlign: 'center', opacity: 0.7, color: '#B0BEC5'}}>No entries found. Start journaling!</p>
+                <p className="no-entries-message">No entries found. Start journaling!</p>
               )}
             </div>
           </div>
         )}
       </main>
 
-      <footer style={footerStyle}>
-        <div style={footerButtonsStyle}>
-          <button onClick={() => setShowHistory(!showHistory)} style={buttonStyle}>
+      <footer className="App-footer">
+        <div className="footer-buttons-container">
+          <button onClick={() => setShowHistory(!showHistory)} className="App-button">
             {showHistory ? 'Back to Journal' : 'View History'}
           </button>
-          {/* Toggle between dynamic background and lantern mode */}
-          <button onClick={() => setLanternMode(prev => !prev)} style={buttonStyle}>
-            <img src={pineIconUrl} alt="Lantern" style={{ height: '1.2em', verticalAlign: 'middle', marginRight: '5px' }} />
+          <button onClick={() => setLanternMode(prev => !prev)} className="App-button toggle-lantern-button">
+            <img src={pineIconUrl} alt="Lantern" className="lantern-icon" />
             {lanternMode ? 'Dynamic Backgrounds' : 'Lantern Mode'}
           </button>
-          <button onClick={downloadAllEntries} style={buttonStyle}>Download All Entries</button>
-          <button onClick={clearAllEntries} style={{...buttonStyle, backgroundColor: '#EF5350', border: '1px solid #EF5350'}}>Clear All Data</button>
-          <button onClick={triggerPorscheSurprise} style={buttonStyle}>Porsche Surprise</button>
+          <button onClick={downloadAllEntries} className="App-button">Download All Entries</button>
+          <button onClick={clearAllEntries} className="App-button clear-all-button">Clear All Data</button>
+          <button onClick={triggerPorscheSurprise} className="App-button">Porsche Surprise</button>
         </div>
-        <p style={{marginTop: '10px', fontSize: '0.9em', opacity: 0.8}}>
-          "Healing begins in silence." | &copy; 2024 Veenkoti Studios
-        </p>
-        {notification && <div style={notificationStyle}>{notification}</div>}
+        <p className="footer-credit">Built by Veenkoti Studios - Let silence be your sanctuary.</p>
+        {notification && <div className="notification">{notification}</div>}
       </footer>
     </div>
   );
 }
-
-// --- Inline Styles (Refined to match original aesthetic and fix issues) ---
-
-const commonButtonStyles = {
-  background: '#333333', // Dark background for buttons
-  color: '#B0BEC5', // Light gray text for buttons
-  border: '1px solid #607D8B', // A slightly lighter gray border
-  padding: '10px 20px',
-  borderRadius: '5px',
-  cursor: 'pointer',
-  fontSize: '1em',
-  fontWeight: 'bold',
-  transition: 'background-color 0.3s ease, transform 0.2s ease, border-color 0.3s ease',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: '8px',
-  boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
-  minWidth: '150px', // Ensure consistent button width
-  whiteSpace: 'nowrap', // Prevent text wrapping
-  '&:hover': { // This pseudo-class syntax doesn't work directly in inline styles, only for reference
-    background: '#455A64', // Slightly lighter on hover
-    transform: 'translateY(-2px)',
-    borderColor: '#78909C',
-  },
-  '&:active': { // For reference
-    transform: 'translateY(0)',
-  },
-};
-
-const headerStyle = {
-  textAlign: 'center',
-  padding: '20px',
-  background: 'rgba(0,0,0,0.6)', // Increased opacity slightly for header
-  backdropFilter: 'blur(8px)', // Increased blur for header
-  borderRadius: '0 0 15px 15px',
-  marginBottom: '20px',
-  boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
-};
-
-const titleStyle = {
-  fontSize: '3em', // Slightly larger title
-  margin: '0',
-  letterSpacing: '3px', // Increased letter spacing
-  fontWeight: 'lighter', // Lighter font weight for a softer look
-  color: '#80DEEA', // Light blue-green for the title
-  fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif', // Modern font stack
-};
-
-const dateTimeStyle = {
-  fontSize: '1.2em', // Slightly larger date/time
-  marginTop: '10px',
-  display: 'flex',
-  justifyContent: 'center',
-  gap: '20px', // Increased gap
-  opacity: 0.9,
-  color: '#CFD8DC', // Lighter gray for date/time
-};
-
-const mainContentStyle = {
-  flexGrow: 1,
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'flex-start',
-  padding: '20px',
-};
-
-const journalAreaStyle = {
-  background: 'rgba(0,0,0,0.6)', // Increased opacity for main area
-  backdropFilter: 'blur(12px)', // Stronger blur
-  padding: '30px',
-  borderRadius: '15px',
-  width: '100%',
-  maxWidth: '850px', // Slightly wider journal area
-  boxShadow: '0 0 25px rgba(0,0,0,0.6)',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  border: '1px solid rgba(128, 222, 234, 0.3)', // Subtle border matching title color
-};
-
-const promptBoxStyle = {
-  background: 'rgba(128, 222, 234, 0.1)', // Light blue-green tint with opacity
-  padding: '18px 25px', // More padding
-  borderRadius: '10px',
-  marginBottom: '25px', // More space below prompt
-  width: '100%',
-  textAlign: 'center',
-  boxShadow: 'inset 0 0 10px rgba(0,0,0,0.4)',
-  borderLeft: '5px solid #80DEEA', // Solid border accent
-  color: '#E0F7FA', // Very light blue text for prompt
-  lineHeight: '1.5',
-};
-
-const textareaStyle = {
-  width: 'calc(100% - 40px)', // Adjust for padding
-  height: '300px', // Taller textarea
-  padding: '20px',
-  borderRadius: '10px',
-  border: '1px solid rgba(128, 222, 234, 0.4)', // Accent color border
-  background: 'rgba(0,0,0,0.3)', // Darker background for textarea
-  color: '#E0F7FA', // Lightest text color for readability
-  fontSize: '1.1em',
-  lineHeight: '1.8', // More line spacing
-  resize: 'vertical',
-  marginBottom: '20px',
-  boxShadow: 'inset 0 0 12px rgba(0,0,0,0.4)',
-  fontFamily: 'inherit',
-  transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
-  outline: 'none', // Remove default outline
-  '&:focus': { // Note: for true `:focus` effect, use a CSS file or styled-components
-    borderColor: '#80DEEA',
-    boxShadow: 'inset 0 0 15px rgba(128, 222, 234, 0.2)',
-  }
-};
-
-const buttonContainerStyle = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '15px',
-  justifyContent: 'center',
-  width: '100%',
-};
-
-const buttonStyle = { ...commonButtonStyles }; // Apply common styles
-
-const categoryDropdownStyle = {
-    position: 'absolute',
-    top: 'calc(100% + 5px)', // Position below the button
-    left: '50%',
-    transform: 'translateX(-50%)',
-    background: 'rgba(0,0,0,0.9)', // More opaque background
-    borderRadius: '8px',
-    boxShadow: '0 8px 16px rgba(0,0,0,0.6)',
-    zIndex: 20, // Higher z-index to ensure it's on top
-    display: 'flex',
-    flexDirection: 'column',
-    minWidth: '180px', // Wider dropdown
-    border: '1px solid #4DB6AC', // Subtle border
-    maxHeight: '300px', // Limit height for scroll if many categories
-    overflowY: 'auto',
-    opacity: 1, // Ensure full opacity for visibility
-    transition: 'opacity 0.2s ease-in-out',
-};
-
-const dropdownItemStyle = {
-    background: 'transparent',
-    color: '#CFD8DC', // Light gray text for readability
-    border: 'none',
-    padding: '12px 18px',
-    textAlign: 'center',
-    cursor: 'pointer',
-    fontSize: '1em',
-    width: '100%',
-    transition: 'background-color 0.2s ease, color 0.2s ease',
-    '&:hover': { // For reference
-        background: 'rgba(77, 182, 172, 0.2)', // Hint of accent color on hover
-        color: '#E0F7FA',
-    },
-    '&:first-of-type': { // For reference
-        borderTopLeftRadius: '8px',
-        borderTopRightRadius: '8px',
-    },
-    '&:last-of-type': { // For reference
-        borderBottomLeftRadius: '8px',
-        borderBottomRightRadius: '8px',
-    },
-};
-
-const typingIndicatorStyle = {
-    fontSize: '0.9em',
-    opacity: 0.7,
-    marginTop: '10px',
-    color: '#80DEEA', // Accent color
-};
-
-const historyAreaStyle = {
-  background: 'rgba(0,0,0,0.6)',
-  backdropFilter: 'blur(12px)',
-  padding: '30px',
-  borderRadius: '15px',
-  width: '100%',
-  maxWidth: '900px',
-  boxShadow: '0 0 25px rgba(0,0,0,0.6)',
-  display: 'flex',
-  flexDirection: 'column',
-  border: '1px solid rgba(128, 222, 234, 0.3)',
-};
-
-const searchBarStyle = {
-  width: 'calc(100% - 40px)',
-  padding: '12px 20px',
-  marginBottom: '20px',
-  borderRadius: '8px',
-  border: '1px solid rgba(128, 222, 234, 0.4)',
-  background: 'rgba(0,0,0,0.3)',
-  color: '#E0F7FA',
-  fontSize: '1em',
-  boxShadow: 'inset 0 0 8px rgba(0,0,0,0.3)',
-  outline: 'none',
-};
-
-const historyListStyle = {
-  maxHeight: '60vh',
-  overflowY: 'auto',
-  paddingRight: '10px',
-};
-
-const entryCardStyle = {
-  background: 'rgba(0,0,0,0.4)', // Slightly darker background for cards
-  padding: '20px',
-  borderRadius: '10px',
-  marginBottom: '15px',
-  boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
-  borderLeft: '4px solid #4DB6AC', // A calming accent color
-  color: '#CFD8DC', // Default text for cards
-};
-
-const entryContentStyle = {
-  fontSize: '1em',
-  lineHeight: '1.6',
-  marginBottom: '15px',
-  maxHeight: '100px',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  display: '-webkit-box',
-  WebkitLineClamp: '4',
-  WebkitBoxOrient: 'vertical',
-  color: '#E0F7FA', // Lighter text for content snippet
-};
-
-const entryActionsStyle = {
-  display: 'flex',
-  gap: '10px',
-  marginTop: '10px',
-};
-
-const entryActionButton = {
-  ...commonButtonStyles, // Inherit base button styles
-  padding: '8px 15px',
-  fontSize: '0.9em',
-  background: '#4DB6AC', // Accent color for action buttons
-  border: '1px solid #4DB6AC',
-  '&:hover': { // For reference
-    background: '#26A69A',
-    borderColor: '#26A69A',
-  }
-};
-
-const footerStyle = {
-  textAlign: 'center',
-  padding: '20px',
-  background: 'rgba(0,0,0,0.6)',
-  backdropFilter: 'blur(8px)',
-  borderRadius: '15px 15px 0 0',
-  marginTop: '20px',
-  boxShadow: '0 -4px 10px rgba(0,0,0,0.5)',
-};
-
-const footerButtonsStyle = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '15px',
-  justifyContent: 'center',
-  marginBottom: '10px',
-};
-
-const notificationStyle = {
-  position: 'fixed',
-  bottom: '20px',
-  left: '50%',
-  transform: 'translateX(-50%)',
-  background: 'rgba(0,0,0,0.85)', // Slightly more opaque for prominence
-  color: '#B0BEC5',
-  padding: '12px 25px', // More padding
-  borderRadius: '8px',
-  zIndex: 1000,
-  fontSize: '1em',
-  boxShadow: '0 2px 12px rgba(0,0,0,0.6)',
-  border: '1px solid #80DEEA', // Accent border
-  animation: 'fadeInOut 4s forwards', // This still needs to be in a global CSS file
-};
 
 export default App;
