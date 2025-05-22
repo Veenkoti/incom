@@ -1,3 +1,4 @@
+import './App.css';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './App.css'; // <--- IMPORTANT: Import the new CSS file here!
 
