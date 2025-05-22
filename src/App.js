@@ -73,7 +73,7 @@ const promptCategories = {
   ]
 };
 
-// Dynamic background system based on mood/tone
+// Dynamic background system based on mood/tone (using Unsplash for reliability)
 const backgroundScenes = {
   // Nordic/Scandinavia scenes
   peaceful: [
@@ -134,17 +134,17 @@ const backgroundScenes = {
     "https://source.unsplash.com/1920x1080/?mountain,top,success",
     "https://source.unsplash.com/1920x1080/?peak,triumph,golden"
   ],
-  grateful: [ // Added a specific scene for 'grateful' mood
+  grateful: [
     "https://source.unsplash.com/1920x1080/?sunset,golden,light,warm",
     "https://source.unsplash.com/1920x1080/?harvest,abundance,nature",
     "https://source.unsplash.com/1920x1080/?cozy,home,comfort"
   ],
-  reflective: [ // Added a specific scene for 'reflective' mood
+  reflective: [
     "https://source.unsplash.com/1920x1080/?library,books,study,quiet",
     "https://source.unsplash.com/1920x1080/?rain,window,contemplation",
     "https://source.unsplash.com/1920x1080/?foggy,morning,solitude"
   ],
-  creative: [ // Added a specific scene for 'creative' mood
+  creative: [
     "https://source.unsplash.com/1920x1080/?art,studio,inspiration",
     "https://source.unsplash.com/1920x1080/?colorful,abstract,paint",
     "https://source.unsplash.com/1920x1080/?dreamy,surreal,imagination"
@@ -162,7 +162,7 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [clock, setClock] = useState(new Date());
-  const [lanternMode, setLanternMode] = useState(false);
+  const [lanternMode, setLanternMode] = useState(false); // Controls if video is active
   const [showHistory, setShowHistory] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [notification, setNotification] = useState('');
@@ -172,19 +172,18 @@ function App() {
   const [promptCount, setPromptCount] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const [lastActivity, setLastActivity] = useState(Date.now());
-  const [currentMood, setCurrentMood] = useState('default');
-  const [backgroundImage, setBackgroundImage] = useState('');
+  const [currentMood, setCurrentMood] = useState('default'); // Default mood for dynamic backgrounds
+  const [backgroundImage, setBackgroundImage] = useState(''); // Stores the URL for image backgrounds
   const [showPorsche, setShowPorsche] = useState(false);
-  const [isMobile, setIsMobile] = useState(false); // New state for mobile detection
   
   const videoRef = useRef(null);
   const textareaRef = useRef(null);
   const notificationTimeoutRef = useRef(null); // Ref to store notification timeout ID
 
-  // Google Drive direct download links (ensure these are publicly accessible)
-  const lanternVideoUrl = "https://drive.google.com/uc?export=download&id=1bnfuQ-FbE7aR058A8FjK8CkaY_fLmaPW";
-  const pineIconUrl = "https://drive.google.com/uc?export=download&id=19WFoF3nz4y9P1ezBzOSyQbf-TRsWGHq0";
-  const porscheImageUrl = "https://drive.google.com/uc?export=download&id=1UZ29pzNh9f_iQrn_Xfd2nQYG59XtKsfq";
+  // Cloudinary URLs (publicly accessible)
+  const lanternVideoUrl = "https://res.cloudinary.com/dausootjh/video/upload/v1747906119/vhfgxrpxygwaqnpsmca4.mp4";
+  const pineIconUrl = "https://res.cloudinary.com/dausootjh/image/upload/v1747906043/Northern_Journal_Icon_Design_g9vm1l.png";
+  const porscheImageUrl = "https://res.cloudinary.com/dausootjh/image/upload/v1747906043/Twilight_Porsche_in_Snowy_Landscape_xwlrkj.png";
 
   const getFormattedDate = () =>
     clock.toLocaleDateString('en-US', {
@@ -208,34 +207,32 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Initialize background and check for mobile on mount
+  // Initialize background on mount (dynamic images by default)
   useEffect(() => {
     updateBackgroundForMood('default');
-    setIsMobile(/Mobi|Android/i.test(navigator.userAgent));
   }, []);
 
   // Activity tracking for auto-save
   useEffect(() => {
     const interval = setInterval(() => {
-      // Auto-save only if currentEntry has content and user is inactive
-      if (currentEntry.trim() && Date.now() - lastActivity > 30000) { // 30 seconds inactivity
+      // Auto-save only if currentEntry has content and user is inactive for 30 seconds
+      if (currentEntry.trim() && Date.now() - lastActivity > 30000) {
         autoSave();
       }
     }, 10000); // Check every 10 seconds
 
     return () => clearInterval(interval);
-  }, [currentEntry, lastActivity]); // Dependency array for useEffect
+  }, [currentEntry, lastActivity]);
 
-  // Video setup for lantern mode
+  // Video playback control for lantern mode
   useEffect(() => {
-    if (lanternMode && videoRef.current) {
-      // Ensure video is loaded before attempting to play
-      videoRef.current.load(); // Ensure source is loaded
-      videoRef.current.play().catch(error => {
-        console.warn("Video play failed:", error);
-        // This often happens if the browser blocks autoplay without user interaction
-        // Could show a "play video" button instead if needed
-      });
+    if (videoRef.current) {
+      if (lanternMode) {
+        videoRef.current.play().catch(error => console.warn("Video autoplay failed:", error));
+      } else {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0; // Reset video to start
+      }
     }
   }, [lanternMode]);
 
@@ -248,34 +245,38 @@ function App() {
   useEffect(() => {
     const savedDraft = localStorage.getItem('journal_draft');
     if (savedDraft) {
-      const draft = JSON.parse(savedDraft);
-      setCurrentEntry(draft.content || '');
-      // Optionally restore prompt and mood if desired, though currentEntry is the most important
-      if (draft.prompt) {
-        const promptIdx = allPrompts.findIndex(p => p.text === draft.prompt.text);
-        if (promptIdx !== -1) {
-          setPromptIndex(promptIdx);
+      try {
+        const draft = JSON.parse(savedDraft);
+        setCurrentEntry(draft.content || '');
+        if (draft.prompt) {
+          const promptIdx = allPrompts.findIndex(p => p.text === draft.prompt.text);
+          if (promptIdx !== -1) {
+            setPromptIndex(promptIdx);
+          }
         }
+        if (draft.mood) {
+          setCurrentMood(draft.mood); // Will trigger background update if dynamic mode is active
+        }
+        showNotification('📝 Draft loaded from last session!');
+      } catch (e) {
+        console.error("Failed to parse journal draft from localStorage:", e);
+        localStorage.removeItem('journal_draft'); // Clear corrupted draft
       }
-      if (draft.mood) {
-        setCurrentMood(draft.mood); // Will trigger background update
-      }
-      showNotification('📝 Draft loaded from last session!');
     }
   }, []);
 
-
-  // Update background based on mood
+  // Update background based on mood (only applies if not in lantern mode)
   const updateBackgroundForMood = (mood) => {
-    const scenes = backgroundScenes[mood] || backgroundScenes.default;
-    const randomScene = scenes[Math.floor(Math.random() * scenes.length)];
-    setBackgroundImage(randomScene);
+    if (!lanternMode) { // Only update image background if lantern mode is off
+      const scenes = backgroundScenes[mood] || backgroundScenes.default;
+      const randomScene = scenes[Math.floor(Math.random() * scenes.length)];
+      setBackgroundImage(randomScene);
+    }
     setCurrentMood(mood);
   };
 
   // Notification handler
   const showNotification = (message, duration = 3000) => {
-    // Clear any existing timeout to prevent overlapping notifications
     if (notificationTimeoutRef.current) {
       clearTimeout(notificationTimeoutRef.current);
     }
@@ -294,12 +295,12 @@ function App() {
     setLastActivity(Date.now());
     
     // Debounce the typing indicator reset
-    if (notificationTimeoutRef.current) { // Reusing notificationTimeoutRef, consider separate ref for this
+    if (notificationTimeoutRef.current) { // Reusing notificationTimeoutRef, could use a separate one
         clearTimeout(notificationTimeoutRef.current);
     }
     notificationTimeoutRef.current = setTimeout(() => setIsTyping(false), 1000);
 
-    // Basic sentiment analysis for background change (more robust analysis would be in a separate function/service)
+    // Basic sentiment analysis for background change
     let detectedMood = 'default';
     const lowerText = text.toLowerCase();
     
@@ -353,14 +354,14 @@ function App() {
     let next;
     let newPrompt;
     let attempts = 0;
-    const maxAttempts = 10; // Prevent infinite loop if only one prompt exists
+    const maxAttempts = 10;
 
     do {
       next = Math.floor(Math.random() * promptsToUse.length);
       newPrompt = promptsToUse[next];
       attempts++;
     } while (
-      newPrompt.text === (promptIndex >= 0 ? allPrompts[promptIndex]?.text : null) && // Compare text for robustness
+      newPrompt.text === (promptIndex >= 0 ? allPrompts[promptIndex]?.text : null) && 
       promptsToUse.length > 1 &&
       attempts < maxAttempts
     );
@@ -370,13 +371,13 @@ function App() {
     setPromptIndex(promptInAllPrompts);
     setPromptCount(prev => prev + 1);
     
-    // Update background based on prompt mood
+    // Update background based on prompt mood (if not in lantern mode)
     if (selectedPrompt.mood) {
       updateBackgroundForMood(selectedPrompt.mood);
     }
     
-    // Surprise trigger (every 10th prompt, excluding the very first one)
-    if (promptCount > 0 && (promptCount + 1) % 10 === 0) { // +1 because promptCount updates after this check
+    // Surprise trigger (every 10th prompt)
+    if (promptCount > 0 && (promptCount + 1) % 10 === 0) { 
       setTimeout(() => triggerSurprise(), 2000);
     }
     
@@ -388,23 +389,24 @@ function App() {
     setShowSurprise(true);
     setShowPorsche(true);
     showNotification("🎉 Surprise! You've been consistent with your journaling - like the precision of a Porsche 911!", 6000);
+    // Temporarily set background to Porsche image if not in lantern mode
+    if (!lanternMode) setBackgroundImage(porscheImageUrl);
     setTimeout(() => {
       setShowSurprise(false);
       setShowPorsche(false);
-      // Revert to current mood background after surprise if needed, or let the user choose
-      updateBackgroundForMood(currentMood); 
+      // Revert to current mood background after surprise if not in lantern mode
+      if (!lanternMode) updateBackgroundForMood(currentMood); 
     }, 6000);
   };
 
   // Manual Porsche surprise
   const triggerPorscheSurprise = () => {
     setShowPorsche(true);
-    setBackgroundImage(porscheImageUrl); // Set Porsche as background temporarily
+    if (!lanternMode) setBackgroundImage(porscheImageUrl);
     showNotification("🏎️ Sometimes beauty appears in unexpected moments... like a perfectly engineered machine.", 5000);
     setTimeout(() => {
       setShowPorsche(false);
-      // Revert to current mood background after surprise
-      updateBackgroundForMood(currentMood); 
+      if (!lanternMode) updateBackgroundForMood(currentMood); 
     }, 5000);
   };
 
@@ -417,26 +419,25 @@ function App() {
 
     const wordCount = currentEntry.trim().split(/\s+/).length;
     const charCount = currentEntry.length;
-    // Average reading speed is about 200-250 words per minute for adults
     const estimatedReadTime = Math.ceil(wordCount / 225); 
 
     const newEntry = {
-      id: Date.now(), // Unique ID for each entry
+      id: Date.now(), 
       content: currentEntry,
       date: new Date().toISOString(),
-      prompt: promptIndex >= 0 ? allPrompts[promptIndex] : null, // Store the full prompt object or null
+      prompt: promptIndex >= 0 ? allPrompts[promptIndex] : null, 
       wordCount,
       charCount,
       estimatedReadTime,
-      mood: currentMood, // Save the mood detected or set
-      backgroundUsed: backgroundImage, // Save the background image used
-      tags: extractTags(currentEntry) // Extract tags
+      mood: currentMood, 
+      backgroundUsed: backgroundImage, 
+      tags: extractTags(currentEntry) 
     };
 
-    setEntries(prev => [newEntry, ...prev]); // Add new entry to the beginning of the array
-    setCurrentEntry(''); // Clear current entry
-    setPromptIndex(-1); // Reset prompt index
-    localStorage.removeItem('journal_draft'); // Clear auto-saved draft
+    setEntries(prev => [newEntry, ...prev]); 
+    setCurrentEntry(''); 
+    setPromptIndex(-1); 
+    localStorage.removeItem('journal_draft'); 
     showNotification('✅ Entry saved successfully!');
     
     // Achievement notifications
@@ -446,12 +447,11 @@ function App() {
     } else if (newTotalEntries === 10) {
       setTimeout(() => showNotification('🏆 Achievement: 10 entries! Your healing journey is taking shape.'), 1500);
     }
-    // You could add more achievements here (e.g., 50 entries, longest entry, daily streaks)
   };
 
   // Auto-save functionality
   const autoSave = () => {
-    if (currentEntry.trim() && currentEntry.length > 50) { // Only auto-save if substantial content exists
+    if (currentEntry.trim() && currentEntry.length > 50) { 
       const draft = {
         content: currentEntry,
         timestamp: new Date().toISOString(),
@@ -459,7 +459,7 @@ function App() {
         mood: currentMood
       };
       localStorage.setItem('journal_draft', JSON.stringify(draft));
-      showNotification('📝 Draft auto-saved', 2000); // Shorter notification for auto-save
+      showNotification('📝 Draft auto-saved', 2000); 
     }
   };
 
@@ -470,8 +470,7 @@ function App() {
     const foundKeywords = keywords.filter(keyword => 
       text.toLowerCase().includes(keyword)
     );
-    // Return unique tags
-    return [...new Set([...hashtags, ...foundKeywords])];
+    return [...new Set([...hashtags, ...foundKeywords])]; // Return unique tags
   };
 
   // Enhanced download with better formatting
@@ -504,7 +503,7 @@ Tags: ${extractTags(currentEntry).join(', ') || 'None'}
     a.href = URL.createObjectURL(blob);
     a.download = `northern-journal-${new Date().toISOString().split('T')[0]}-${Date.now()}.txt`;
     a.click();
-    URL.revokeObjectURL(a.href); // Clean up the object URL
+    URL.revokeObjectURL(a.href); 
     showNotification('📥 Entry downloaded successfully!');
   };
 
@@ -552,7 +551,7 @@ ${'='.repeat(50)}
     a.href = URL.createObjectURL(blob);
     a.download = `northern-journal-complete-${new Date().toISOString().split('T')[0]}.txt`;
     a.click();
-    URL.revokeObjectURL(a.href); // Clean up the object URL
+    URL.revokeObjectURL(a.href);
     showNotification('📤 All entries downloaded!');
   };
 
@@ -603,61 +602,57 @@ ${'='.repeat(50)}
     (entry.tags && entry.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
   );
 
-  // Helper for smooth scrolling (if implementing specific section scrolling)
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-
   return (
     <div className="App" style={{ 
-      backgroundImage: `url(${backgroundImage})`, 
+      // Conditional background based on lanternMode
+      backgroundImage: lanternMode ? 'none' : `url(${backgroundImage})`, 
       backgroundSize: 'cover', 
       backgroundPosition: 'center', 
       backgroundAttachment: 'fixed',
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',
-      color: 'white', // Default text color for readability against backgrounds
-      textShadow: '1px 1px 3px rgba(0,0,0,0.7)', // Adds shadow for better readability
-      transition: 'background-image 2s ease-in-out' // Smooth transition for background changes
+      color: '#ECEFF1', // Light gray/blue from your original
+      textShadow: '1px 1px 3px rgba(0,0,0,0.7)', 
+      transition: 'background-image 2s ease-in-out',
+      position: 'relative', // Needed for video overlay
     }}>
-      {/* Lantern Mode Video */}
+      {/* Lantern Mode Video Background */}
       {lanternMode && (
-        <div className="lantern-overlay" style={{
-          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-          backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 99, display: 'flex',
-          justifyContent: 'center', alignItems: 'center'
-        }}>
-          <video ref={videoRef} loop autoPlay muted playsInline style={{
-            maxWidth: '90%', maxHeight: '90%', borderRadius: '15px', boxShadow: '0 0 20px rgba(0,0,0,0.5)'
-          }}>
-            <source src={lanternVideoUrl} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-          <button onClick={() => setLanternMode(false)} className="close-lantern-btn" style={{
-            position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.3)',
-            color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px',
-            fontSize: '1.2em', cursor: 'pointer', zIndex: 100
-          }}>
-            X
-          </button>
-        </div>
+        <video 
+          ref={videoRef} 
+          loop 
+          muted 
+          playsInline // 'playsInline' is important for mobile autoplay
+          style={{
+            position: 'fixed',
+            top: 0, left: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+            zIndex: -1, // Ensures video is behind content
+            opacity: 0.8, // Slightly fade the video
+            filter: 'brightness(0.7)' // Darken the video for readability
+          }}
+        >
+          <source src={lanternVideoUrl} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
       )}
 
       {/* Porsche Surprise */}
       {showPorsche && (
-        <div className="porsche-surprise" style={{
-          position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+        <div className="porsche-surprise-overlay" style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
           display: 'flex', justifyContent: 'center', alignItems: 'center',
           backgroundColor: 'rgba(0, 0, 0, 0.7)', zIndex: 1000,
-          animation: 'fadeIn 0.5s', // Basic fade-in
+          opacity: showSurprise ? 1 : 0, // Control opacity for fade effect
+          transition: 'opacity 0.5s ease-in-out',
         }}>
           <img src={porscheImageUrl} alt="Porsche 911" style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain' }} />
           <button onClick={() => setShowPorsche(false)} style={{
             position: 'absolute', top: '20px', right: '20px', padding: '10px 15px',
             background: 'rgba(255, 255, 255, 0.3)', color: 'white', border: 'none',
-            borderRadius: '5px', cursor: 'pointer', fontSize: '1em'
+            borderRadius: '5px', cursor: 'pointer', fontSize: '1em', zIndex: 1001
           }}>Close</button>
         </div>
       )}
@@ -691,17 +686,17 @@ ${'='.repeat(50)}
             {isTyping && <div style={typingIndicatorStyle}>Typing...</div>}
 
             <div style={buttonContainerStyle}>
-              <button onClick={() => showPrompt(selectedCategory)} style={buttonStyle}>New Prompt</button>
+              {/* Category Dropdown */}
               <div style={{position: 'relative'}}>
                   <button onClick={() => setShowCategories(!showCategories)} style={buttonStyle}>
-                      {selectedCategory === 'all' ? 'Categories ▼' : `${selectedCategory} ▼`}
+                      {selectedCategory === 'all' ? 'Categories ▼' : `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} ▼`}
                   </button>
                   {showCategories && (
                       <div style={categoryDropdownStyle}>
                           <button onClick={() => { setSelectedCategory('all'); showPrompt('all'); setShowCategories(false); }} style={dropdownItemStyle}>All Prompts</button>
-                          {Object.keys(promptCategories).map(category => (
+                          {Object.keys(promptCategories).filter(cat => cat !== 'whisper').map(category => ( // Filter out whisper from main list
                               <button 
-                                  key={category} // Added key prop
+                                  key={category} 
                                   onClick={() => { setSelectedCategory(category); showPrompt(category); setShowCategories(false); }} 
                                   style={dropdownItemStyle}
                               >
@@ -711,7 +706,8 @@ ${'='.repeat(50)}
                       </div>
                   )}
               </div>
-              <button onClick={() => showPrompt(null, true)} style={buttonStyle}>Whisper Prompt</button>
+              <button onClick={() => showPrompt()} style={buttonStyle}>New Prompt</button>
+              <button onClick={() => showPrompt(null, true)} style={buttonStyle}>Whisper Prompt</button> {/* Moved closer to textarea controls */}
               <button onClick={saveEntry} style={buttonStyle}>Save Entry</button>
               <button onClick={downloadEntry} style={buttonStyle}>Download Current</button>
               <button onClick={copyEntry} style={buttonStyle}>Copy Current</button>
@@ -719,7 +715,7 @@ ${'='.repeat(50)}
           </div>
         ) : (
           <div style={historyAreaStyle}>
-            <h2 style={{textAlign: 'center'}}>Journal History</h2>
+            <h2 style={{textAlign: 'center', color: '#B3E5FC'}}>Journal History</h2>
             <input
               type="text"
               placeholder="Search entries..."
@@ -731,7 +727,7 @@ ${'='.repeat(50)}
               {filteredEntries.length > 0 ? (
                 filteredEntries.map((entry) => (
                   <div key={entry.id} style={entryCardStyle}>
-                    <h3 style={{margin: '0 0 5px 0'}}>
+                    <h3 style={{margin: '0 0 5px 0', color: '#80DEEA'}}>
                       {new Date(entry.date).toLocaleDateString()} - 
                       {entry.prompt ? ` Prompt: "${entry.prompt.text.substring(0, 50)}..."` : ' Untitled'}
                     </h3>
@@ -742,12 +738,12 @@ ${'='.repeat(50)}
                     <p style={entryContentStyle}>{entry.content.substring(0, 300)}{entry.content.length > 300 ? '...' : ''}</p>
                     <div style={entryActionsStyle}>
                       <button onClick={() => alert(`Full Entry:\n\n${new Date(entry.date).toLocaleString()}\n${entry.prompt ? 'Prompt: ' + entry.prompt.text + '\n' : ''}\n${entry.content}\n\nWords: ${entry.wordCount}\nMood: ${entry.mood}`)} style={entryActionButton}>Read Full</button>
-                      <button onClick={() => deleteEntry(entry.id)} style={{ ...entryActionButton, background: '#dc3545' }}>Delete</button>
+                      <button onClick={() => deleteEntry(entry.id)} style={{ ...entryActionButton, backgroundColor: '#EF5350' }}>Delete</button> {/* Red color */}
                     </div>
                   </div>
                 ))
               ) : (
-                <p style={{textAlign: 'center', opacity: 0.7}}>No entries found. Start journaling!</p>
+                <p style={{textAlign: 'center', opacity: 0.7, color: '#B0BEC5'}}>No entries found. Start journaling!</p>
               )}
             </div>
           </div>
@@ -759,13 +755,14 @@ ${'='.repeat(50)}
           <button onClick={() => setShowHistory(!showHistory)} style={buttonStyle}>
             {showHistory ? 'Back to Journal' : 'View History'}
           </button>
-          <button onClick={() => setLanternMode(!lanternMode)} style={buttonStyle}>
+          {/* Toggle between dynamic background and lantern mode */}
+          <button onClick={() => setLanternMode(prev => !prev)} style={buttonStyle}>
             <img src={pineIconUrl} alt="Lantern" style={{ height: '1.2em', verticalAlign: 'middle', marginRight: '5px' }} />
-            Lantern Mode {lanternMode ? 'On' : 'Off'}
+            {lanternMode ? 'Dynamic Backgrounds' : 'Lantern Mode'}
           </button>
           <button onClick={downloadAllEntries} style={buttonStyle}>Download All Entries</button>
-          <button onClick={clearAllEntries} style={{...buttonStyle, background: '#dc3545'}}>Clear All Data</button>
-          <button onClick={triggerPorscheSurprise} style={buttonStyle}>Porsche Surprise</button> {/* Manual trigger */}
+          <button onClick={clearAllEntries} style={{...buttonStyle, backgroundColor: '#EF5350', border: '1px solid #EF5350'}}>Clear All Data</button>
+          <button onClick={triggerPorscheSurprise} style={buttonStyle}>Porsche Surprise</button>
         </div>
         <p style={{marginTop: '10px', fontSize: '0.9em', opacity: 0.8}}>
           "Healing begins in silence." | &copy; 2024 Veenkoti Studios
@@ -776,89 +773,120 @@ ${'='.repeat(50)}
   );
 }
 
-// Inline Styles (can be moved to a CSS file for larger applications)
+// --- Inline Styles (Refined to match original aesthetic and fix issues) ---
+
+const commonButtonStyles = {
+  background: '#333333', // Dark background for buttons
+  color: '#B0BEC5', // Light gray text for buttons
+  border: '1px solid #607D8B', // A slightly lighter gray border
+  padding: '10px 20px',
+  borderRadius: '5px',
+  cursor: 'pointer',
+  fontSize: '1em',
+  fontWeight: 'bold',
+  transition: 'background-color 0.3s ease, transform 0.2s ease, border-color 0.3s ease',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
+  minWidth: '150px', // Ensure consistent button width
+  whiteSpace: 'nowrap', // Prevent text wrapping
+  '&:hover': { // This pseudo-class syntax doesn't work directly in inline styles, only for reference
+    background: '#455A64', // Slightly lighter on hover
+    transform: 'translateY(-2px)',
+    borderColor: '#78909C',
+  },
+  '&:active': { // For reference
+    transform: 'translateY(0)',
+  },
+};
+
 const headerStyle = {
   textAlign: 'center',
   padding: '20px',
-  background: 'rgba(0,0,0,0.4)',
-  backdropFilter: 'blur(5px)',
+  background: 'rgba(0,0,0,0.6)', // Increased opacity slightly for header
+  backdropFilter: 'blur(8px)', // Increased blur for header
   borderRadius: '0 0 15px 15px',
   marginBottom: '20px',
-  boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+  boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
 };
 
 const titleStyle = {
-  fontSize: '2.8em',
+  fontSize: '3em', // Slightly larger title
   margin: '0',
-  letterSpacing: '2px',
-  fontWeight: 'bold',
+  letterSpacing: '3px', // Increased letter spacing
+  fontWeight: 'lighter', // Lighter font weight for a softer look
+  color: '#80DEEA', // Light blue-green for the title
+  fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif', // Modern font stack
 };
 
 const dateTimeStyle = {
-  fontSize: '1.1em',
+  fontSize: '1.2em', // Slightly larger date/time
   marginTop: '10px',
   display: 'flex',
   justifyContent: 'center',
-  gap: '15px',
+  gap: '20px', // Increased gap
   opacity: 0.9,
+  color: '#CFD8DC', // Lighter gray for date/time
 };
 
 const mainContentStyle = {
   flexGrow: 1,
   display: 'flex',
   justifyContent: 'center',
-  alignItems: 'flex-start', // Align to top
+  alignItems: 'flex-start',
   padding: '20px',
 };
 
 const journalAreaStyle = {
-  background: 'rgba(0,0,0,0.5)',
-  backdropFilter: 'blur(10px)',
+  background: 'rgba(0,0,0,0.6)', // Increased opacity for main area
+  backdropFilter: 'blur(12px)', // Stronger blur
   padding: '30px',
   borderRadius: '15px',
   width: '100%',
-  maxWidth: '800px',
-  boxShadow: '0 0 20px rgba(0,0,0,0.5)',
+  maxWidth: '850px', // Slightly wider journal area
+  boxShadow: '0 0 25px rgba(0,0,0,0.6)',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
+  border: '1px solid rgba(128, 222, 234, 0.3)', // Subtle border matching title color
 };
 
 const promptBoxStyle = {
-  background: 'rgba(255,255,255,0.1)',
-  padding: '15px 20px',
+  background: 'rgba(128, 222, 234, 0.1)', // Light blue-green tint with opacity
+  padding: '18px 25px', // More padding
   borderRadius: '10px',
-  marginBottom: '20px',
+  marginBottom: '25px', // More space below prompt
   width: '100%',
   textAlign: 'center',
-  boxShadow: 'inset 0 0 10px rgba(0,0,0,0.3)',
-  borderLeft: '5px solid #a8dadc',
+  boxShadow: 'inset 0 0 10px rgba(0,0,0,0.4)',
+  borderLeft: '5px solid #80DEEA', // Solid border accent
+  color: '#E0F7FA', // Very light blue text for prompt
+  lineHeight: '1.5',
 };
 
 const textareaStyle = {
   width: 'calc(100% - 40px)', // Adjust for padding
-  height: '250px',
+  height: '300px', // Taller textarea
   padding: '20px',
   borderRadius: '10px',
-  border: '1px solid rgba(255,255,255,0.3)',
-  background: 'rgba(255,255,255,0.05)',
-  color: 'white',
+  border: '1px solid rgba(128, 222, 234, 0.4)', // Accent color border
+  background: 'rgba(0,0,0,0.3)', // Darker background for textarea
+  color: '#E0F7FA', // Lightest text color for readability
   fontSize: '1.1em',
-  lineHeight: '1.6',
+  lineHeight: '1.8', // More line spacing
   resize: 'vertical',
   marginBottom: '20px',
-  boxShadow: 'inset 0 0 10px rgba(0,0,0,0.2)',
+  boxShadow: 'inset 0 0 12px rgba(0,0,0,0.4)',
   fontFamily: 'inherit',
-  transition: 'border-color 0.3s ease',
+  transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+  outline: 'none', // Remove default outline
+  '&:focus': { // Note: for true `:focus` effect, use a CSS file or styled-components
+    borderColor: '#80DEEA',
+    boxShadow: 'inset 0 0 15px rgba(128, 222, 234, 0.2)',
+  }
 };
-
-// Note: Pseudo-classes like :focus cannot be applied directly in React inline styles.
-// You'd typically use a CSS stylesheet or a styled-components library for this.
-// For demonstration, these are kept as comments or should be handled by a CSS file.
-// textareaStyle[':focus'] = {
-//   borderColor: '#a8dadc',
-//   outline: 'none',
-// };
 
 const buttonContainerStyle = {
   display: 'flex',
@@ -868,118 +896,111 @@ const buttonContainerStyle = {
   width: '100%',
 };
 
-const buttonStyle = {
-  background: 'rgba(168, 218, 220, 0.2)', // Light blue-green with opacity
-  color: 'white',
-  border: '1px solid #a8dadc',
-  padding: '12px 25px',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  fontSize: '1em',
-  fontWeight: 'bold',
-  transition: 'background-color 0.3s ease, transform 0.2s ease',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: '8px',
-  boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-};
-
-// Note: Pseudo-classes like :hover cannot be applied directly in React inline styles.
-// You'd typically use a CSS stylesheet or a styled-components library for this.
-// For demonstration, these are kept as comments or should be handled by a CSS file.
-// buttonStyle[':hover'] = {
-//   background: 'rgba(168, 218, 220, 0.4)',
-//   transform: 'translateY(-2px)',
-// };
+const buttonStyle = { ...commonButtonStyles }; // Apply common styles
 
 const categoryDropdownStyle = {
     position: 'absolute',
-    top: '100%',
+    top: 'calc(100% + 5px)', // Position below the button
     left: '50%',
     transform: 'translateX(-50%)',
-    background: 'rgba(0,0,0,0.8)',
+    background: 'rgba(0,0,0,0.9)', // More opaque background
     borderRadius: '8px',
-    boxShadow: '0 8px 16px rgba(0,0,0,0.5)',
-    zIndex: 10,
+    boxShadow: '0 8px 16px rgba(0,0,0,0.6)',
+    zIndex: 20, // Higher z-index to ensure it's on top
     display: 'flex',
     flexDirection: 'column',
-    minWidth: '150px',
-    marginTop: '5px',
+    minWidth: '180px', // Wider dropdown
+    border: '1px solid #4DB6AC', // Subtle border
+    maxHeight: '300px', // Limit height for scroll if many categories
+    overflowY: 'auto',
+    opacity: 1, // Ensure full opacity for visibility
+    transition: 'opacity 0.2s ease-in-out',
 };
 
 const dropdownItemStyle = {
     background: 'transparent',
-    color: 'white',
+    color: '#CFD8DC', // Light gray text for readability
     border: 'none',
-    padding: '10px 15px',
+    padding: '12px 18px',
     textAlign: 'center',
     cursor: 'pointer',
     fontSize: '1em',
     width: '100%',
-    transition: 'background-color 0.2s ease',
+    transition: 'background-color 0.2s ease, color 0.2s ease',
+    '&:hover': { // For reference
+        background: 'rgba(77, 182, 172, 0.2)', // Hint of accent color on hover
+        color: '#E0F7FA',
+    },
+    '&:first-of-type': { // For reference
+        borderTopLeftRadius: '8px',
+        borderTopRightRadius: '8px',
+    },
+    '&:last-of-type': { // For reference
+        borderBottomLeftRadius: '8px',
+        borderBottomRightRadius: '8px',
+    },
 };
-
-// dropdownItemStyle[':hover'] = {
-//     background: 'rgba(255,255,255,0.1)',
-// };
 
 const typingIndicatorStyle = {
     fontSize: '0.9em',
     opacity: 0.7,
     marginTop: '10px',
-    color: '#a8dadc',
+    color: '#80DEEA', // Accent color
 };
 
 const historyAreaStyle = {
-  background: 'rgba(0,0,0,0.5)',
-  backdropFilter: 'blur(10px)',
+  background: 'rgba(0,0,0,0.6)',
+  backdropFilter: 'blur(12px)',
   padding: '30px',
   borderRadius: '15px',
   width: '100%',
   maxWidth: '900px',
-  boxShadow: '0 0 20px rgba(0,0,0,0.5)',
+  boxShadow: '0 0 25px rgba(0,0,0,0.6)',
   display: 'flex',
   flexDirection: 'column',
+  border: '1px solid rgba(128, 222, 234, 0.3)',
 };
 
 const searchBarStyle = {
   width: 'calc(100% - 40px)',
-  padding: '10px 20px',
+  padding: '12px 20px',
   marginBottom: '20px',
   borderRadius: '8px',
-  border: '1px solid rgba(255,255,255,0.3)',
-  background: 'rgba(255,255,255,0.05)',
-  color: 'white',
+  border: '1px solid rgba(128, 222, 234, 0.4)',
+  background: 'rgba(0,0,0,0.3)',
+  color: '#E0F7FA',
   fontSize: '1em',
-  boxShadow: 'inset 0 0 5px rgba(0,0,0,0.2)',
+  boxShadow: 'inset 0 0 8px rgba(0,0,0,0.3)',
+  outline: 'none',
 };
 
 const historyListStyle = {
-  maxHeight: '60vh', // Limit height for scrolling
+  maxHeight: '60vh',
   overflowY: 'auto',
-  paddingRight: '10px', // For scrollbar
+  paddingRight: '10px',
 };
 
 const entryCardStyle = {
-  background: 'rgba(255,255,255,0.08)',
+  background: 'rgba(0,0,0,0.4)', // Slightly darker background for cards
   padding: '20px',
   borderRadius: '10px',
   marginBottom: '15px',
-  boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
-  borderLeft: '4px solid #457b9d', // A different accent color
+  boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
+  borderLeft: '4px solid #4DB6AC', // A calming accent color
+  color: '#CFD8DC', // Default text for cards
 };
 
 const entryContentStyle = {
   fontSize: '1em',
-  lineHeight: '1.5',
+  lineHeight: '1.6',
   marginBottom: '15px',
-  maxHeight: '100px', // Limit content height in history view
+  maxHeight: '100px',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   display: '-webkit-box',
-  WebkitLineClamp: '4', // Show up to 4 lines
+  WebkitLineClamp: '4',
   WebkitBoxOrient: 'vertical',
+  color: '#E0F7FA', // Lighter text for content snippet
 };
 
 const entryActionsStyle = {
@@ -989,28 +1010,25 @@ const entryActionsStyle = {
 };
 
 const entryActionButton = {
-  background: '#457b9d', // Darker blue accent
-  color: 'white',
-  border: 'none',
+  ...commonButtonStyles, // Inherit base button styles
   padding: '8px 15px',
-  borderRadius: '5px',
-  cursor: 'pointer',
   fontSize: '0.9em',
-  transition: 'background-color 0.2s ease',
+  background: '#4DB6AC', // Accent color for action buttons
+  border: '1px solid #4DB6AC',
+  '&:hover': { // For reference
+    background: '#26A69A',
+    borderColor: '#26A69A',
+  }
 };
-
-// entryActionButton[':hover'] = {
-//   background: '#1d3557', // Even darker blue
-// };
 
 const footerStyle = {
   textAlign: 'center',
   padding: '20px',
-  background: 'rgba(0,0,0,0.4)',
-  backdropFilter: 'blur(5px)',
+  background: 'rgba(0,0,0,0.6)',
+  backdropFilter: 'blur(8px)',
   borderRadius: '15px 15px 0 0',
   marginTop: '20px',
-  boxShadow: '0 -4px 8px rgba(0,0,0,0.3)',
+  boxShadow: '0 -4px 10px rgba(0,0,0,0.5)',
 };
 
 const footerButtonsStyle = {
@@ -1026,28 +1044,15 @@ const notificationStyle = {
   bottom: '20px',
   left: '50%',
   transform: 'translateX(-50%)',
-  background: 'rgba(0,0,0,0.7)',
-  color: 'white',
-  padding: '10px 20px',
-  borderRadius: '5px',
+  background: 'rgba(0,0,0,0.85)', // Slightly more opaque for prominence
+  color: '#B0BEC5',
+  padding: '12px 25px', // More padding
+  borderRadius: '8px',
   zIndex: 1000,
   fontSize: '1em',
-  boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
-  animation: 'fadeInOut 4s forwards', // Fade in and out
+  boxShadow: '0 2px 12px rgba(0,0,0,0.6)',
+  border: '1px solid #80DEEA', // Accent border
+  animation: 'fadeInOut 4s forwards', // This still needs to be in a global CSS file
 };
-
-// Keyframes for notification (These need to be in a global CSS file, not inline JS)
-/*
-@keyframes fadeInOut {
-  0% { opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { opacity: 0; }
-}
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-*/
 
 export default App;
